@@ -77,13 +77,27 @@ var getPosts = function() {
     });
     bar = progress.create({total: 5 + posts.length});
     bar.update();
-    return posts;
+    return _.sortBy(posts, function(post) {
+        if(post != 'home.md') {
+            var postString = fs.readFileSync('_posts/' + post, 'utf-8');
+            var yamlData = getYamlMatter(postString);
+            return -1 * yamlData.time;
+        } else {
+            return 0;
+        }
+    });
 };
 
 var copyStaticFiles = function() {
     gulp.src('_images/*.*').pipe(gulp.dest('_site/images'));
     gulp.src('_styles/*.css').pipe(gulp.dest('_site/css'));
     bar.update();
+};
+
+var getYamlMatter = function(postString) {
+    var yamlClose = postString.substring(3, postString.length).indexOf("---") + 3;
+    var yamlMatter = postString.substring(0, yamlClose);
+    return yaml.eval(yamlMatter);
 };
 
 var buildPosts = function(posts, postTemplate) {
@@ -97,9 +111,7 @@ var buildPosts = function(posts, postTemplate) {
             dom('body').html(result + body);
         
             var postString = fs.readFileSync('_posts/' + postName, 'utf-8');
-            var yamlClose = postString.substring(3, postString.length).indexOf("---") + 3;
-            var yamlMatter = postString.substring(0, yamlClose);
-            var yamlData = yaml.eval(yamlMatter);
+            var yamlData = getYamlMatter(postString);
             var targetFileName = postName.replace(".md", ".html");
             var meta = {};
             meta.link = targetFileName;
